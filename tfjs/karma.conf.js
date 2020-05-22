@@ -15,10 +15,10 @@
  * =============================================================================
  */
 
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
     frameworks: ['jasmine', 'karma-typescript'],
-    files: [{pattern: 'src/**/*.ts'}],
+    files: [{ pattern: 'src/**/*.ts' }],
     preprocessors: {
       '**/*.ts': ['karma-typescript'],  // *.tsx for React Jsx
     },
@@ -27,7 +27,8 @@ module.exports = function(config) {
       reports: {}  // Do not produce coverage html.
     },
     reporters: ['progress', 'karma-typescript'],
-    browsers: ['Chrome'],
+    browsers: ['ChromeHeadless'],
+    singleRun: true,
     browserStack: {
       username: process.env.BROWSERSTACK_USERNAME,
       accessKey: process.env.BROWSERSTACK_KEY
@@ -54,6 +55,6 @@ module.exports = function(config) {
         flags: ['--blacklist-accelerated-compositing', '--blacklist-webgl']
       }
     },
-    client: {args: ['--grep', config.grep || '']}
+    client: { args: ['--grep', config.grep || ''] }
   });
 };
