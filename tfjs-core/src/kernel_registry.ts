@@ -93,6 +93,7 @@ export interface NamedAttrMap {
 export function getKernel(
     kernelName: string, backendName: string): KernelConfig {
   const key = makeKey(kernelName, backendName);
+    // console.log('getting kernel for key: ' + key);
   return kernelRegistry.get(key);
 }
 
@@ -136,6 +137,7 @@ export function getKernelsForBackend(backendName: string): KernelConfig[] {
 export function registerKernel(config: KernelConfig) {
   const {kernelName, backendName} = config;
   const key = makeKey(kernelName, backendName);
+    console.log('Started registerKernel() with key: ' + key);
   if (kernelRegistry.has(key)) {
     console.warn(
         `The kernel '${kernelName}' for backend ` +

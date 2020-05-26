@@ -27,6 +27,7 @@ import {getTensorsInContainer} from './tensor_util';
 import {BackendValues, DataType, DataValues} from './types';
 import * as util from './util';
 import {bytesFromStringArray, makeOnesTypedArray, now, sizeFromShape} from './util';
+import sysutil from 'util';
 
 /**
  * A function that computes an output. The save function is for saving tensors
@@ -77,6 +78,7 @@ interface ScopeState {
   name: string;
   id: number;
 }
+let printCount_ = 0;
 
 class EngineState {
   // Public since optimizers will use it.
@@ -106,6 +108,7 @@ class EngineState {
    */
   numDataMovesStack: number[] = [];
   nextScopeId = 0;
+
 
   tensorInfo = new WeakMap<DataId, {
     backend: KernelBackend,
@@ -503,6 +506,7 @@ export class Engine implements TensorTracker, DataMover {
   private checkKernelForMemLeak(
       kernelName: string, numDataIdsBefore: number,
       outInfos: TensorInfo[]): void {
+      console.log('Started checkKernelForMemLeak ');
     const numDataIdsAfter = this.backend.numDataIds();
 
     // Count the number of data ids associated with the result of the kernel.
@@ -541,6 +545,9 @@ export class Engine implements TensorTracker, DataMover {
     let outputs: Tensor[];
     let saved: Tensor[] = [];
     const isTapeOn = this.isTapeOn();
+    if (isTapeOn) {
+        console.warn('isTapeOn is: ' + isTapeOn);
+    }
     if (kernelName == null) {
       kernelName =
           this.state.activeScope != null ? this.state.activeScope.name : '';
@@ -557,6 +564,7 @@ export class Engine implements TensorTracker, DataMover {
     const kernel = getKernel(kernelName, this.backendName);
     let out: TensorInfo|TensorInfo[];
     if (kernel != null) {
+        console.log('Kernel is not null. good to go');
       kernelFunc = () => {
         const numDataIdsBefore = this.backend.numDataIds();
         out = kernel.kernelFunc({inputs, attrs, backend: this.backend});
@@ -591,6 +599,7 @@ export class Engine implements TensorTracker, DataMover {
         return outTensors;
       };
     } else {
+        console.log('Kernel is NULL');
       const saveFunc: GradSaveFunc = (tensors) => {
         // Do not save unless we are recording to the tape. Otherwise it would
         // cause a mem leak since we would never run backprop, which disposes
@@ -602,12 +611,34 @@ export class Engine implements TensorTracker, DataMover {
       };
 
       kernelFunc = () => {
+        console.log('Started kernelFunc for ' + kernelName);
         const numDataIdsBefore = this.backend.numDataIds();
         out = this.tidy(() => forwardFunc(this.backend, saveFunc));
+
         const outs = (Array.isArray(out) ? out : [out]) as Tensor[];
         if (this.shouldCheckForMemLeaks()) {
           this.checkKernelForMemLeak(kernelName, numDataIdsBefore, outs);
         }
+
+          if (printCount_ > 0 && printCount_ < 30 ){
+              console.log(printCount_ + ' This is the inputs of: '
+                  + kernelName);
+              console.log(sysutil.inspect(inputs,
+              { maxArrayLength: null, showHidden: true, depth: null }));
+              console.log(printCount_ + ' This is the value of: ' + kernelName);
+              let resultArr = outs[0].arraySync();
+              // if (resultArr[0] && resultArr[0][10] && resultArr[0][10][10]) {
+              //     console.log(resultArr[0][10][10]);
+              // }
+              resultArr = outs[0].shape.length <= 2
+                    ? resultArr[0]
+                    : outs[0].shape.length === 3
+                        ? resultArr[0][0] : resultArr[0][0][0];
+              console.log(sysutil.inspect(resultArr,
+              { maxArrayLength: null, showHidden: true, depth: null }));
+          }
+          printCount_++;
+          console.log(outs[0].shape);
         return outs;
       };
     }

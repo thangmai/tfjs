@@ -33,6 +33,7 @@ const kernelConfigs: KernelConfig[] = [
   transposeConfig, maxPoolWithArgmaxConfig
 ];
 
+console.log('About to register all kernels for webgl backend');
 for (const kernelConfig of kernelConfigs) {
   registerKernel(kernelConfig);
 }
